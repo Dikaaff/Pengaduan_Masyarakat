@@ -58,29 +58,87 @@ $result = mysqli_query($conn, $query);
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dashboard Masyarakat</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <style>
+    body {
+        background-color: #f2fff5;
+        min-height: 100vh;
+    }
+
+    .navbar {
+        background-color: #ffffff;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .logo-text {
+        font-weight: bold;
+        color: #28a745;
+        font-size: 20px;
+    }
+
+    .logo-img {
+        width: 30px;
+        margin-right: 10px;
+    }
+
+    .card {
+        border-radius: 15px;
+        border: none;
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.05);
+    }
+
+    .table th {
+        background-color: #d1f7d6;
+    }
+
+    .btn-primary,
+    .btn-danger,
+    .btn-success {
+        border-radius: 10px;
+    }
+
+    .modal-content {
+        border-radius: 15px;
+    }
+    </style>
 </head>
 
-<body style="background-color: #f8f9fa;">
-    <div class="container mt-5">
-        <h3 class="text-center text-success">Dashboard Masyarakat</h3>
-        <p class="text-center">Selamat datang, <?= htmlspecialchars($nama) ?>!</p>
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Laporan Anda</h5>
-                <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#tambahModal">Tambah
+<body>
+    <!-- Navbar -->
+    <nav class="navbar px-4 py-3 d-flex justify-content-between bg-white shadow-sm">
+        <div class="logo-ecoguard d-flex align-items-center">
+            <img src="logoeco.png" width="30" class="me-2">
+            <span class="fw-bold text-success">EcoGuard</span>
+        </div>
+        <a href="login_masyarakat.php" class="btn btn-outline-danger btn-sm">Logout</a>
+    </nav>
+
+
+
+    <!-- Content -->
+    <div class="container mt-4 mb-5">
+        <h3 class="text-success text-center fw-bold mb-2">Dashboard Masyarakat</h3>
+        <p class="text-center mb-4">Selamat datang, <strong><?= htmlspecialchars($nama) ?></strong>!</p>
+
+        <div class="card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0 text-success">Laporan Anda</h5>
+                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#tambahModal">+ Tambah
                     Laporan</button>
-                <table class="table table-bordered">
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover align-middle text-center">
                     <thead class="table-success">
                         <tr>
                             <th>#</th>
                             <th>Tanggal</th>
                             <th>Laporan</th>
                             <th>Status</th>
-                            <th>Aksi</th>
+                            <th style="min-width: 130px;">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -88,8 +146,10 @@ $result = mysqli_query($conn, $query);
                         <tr>
                             <td><?= $no++ ?></td>
                             <td><?= $row['tgl_pengaduan'] ?></td>
-                            <td><?= $row['isi_laporan'] ?></td>
-                            <td><?= ucfirst($row['status']) ?></td>
+                            <td class="text-start"><?= $row['isi_laporan'] ?></td>
+                            <td><span
+                                    class="badge text-bg-<?= $row['status'] == 'pending' ? 'warning' : ($row['status'] == 'selesai' ? 'success' : 'secondary') ?>">
+                                    <?= ucfirst($row['status']) ?></span></td>
                             <td>
                                 <button class="btn btn-primary btn-sm" data-bs-toggle="modal"
                                     data-bs-target="#editModal<?= $row['id_pengaduan'] ?>">Edit</button>
@@ -117,8 +177,7 @@ $result = mysqli_query($conn, $query);
                                             </div>
                                         </div>
                                         <div class="modal-footer">
-                                            <button type="submit" name="edit" class="btn btn-primary">Simpan
-                                                Perubahan</button>
+                                            <button type="submit" name="edit" class="btn btn-primary">Simpan</button>
                                         </div>
                                     </form>
                                 </div>
