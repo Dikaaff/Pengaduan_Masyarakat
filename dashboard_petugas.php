@@ -2,180 +2,226 @@
 include 'koneksi.php';
 session_start();
 
-
-// Cek apakah petugas sudah login
 if (!isset($_SESSION['id_petugas'])) {
     header('Location: login_petugas.php');
     exit;
 }
 
-// Ambil data petugas yang login
 $id_petugas = $_SESSION['id_petugas'];
 $nama_petugas = $_SESSION['nama_petugas'];
 
-// Update status laporan (terima)
+// Aksi
 if (isset($_GET['terima'])) {
     $id_pengaduan = $_GET['terima'];
-    $query = "UPDATE pengaduan SET status = 'accepted' WHERE id_pengaduan = '$id_pengaduan'";
-    mysqli_query($conn, $query);
+    mysqli_query($conn, "UPDATE pengaduan SET status = 'accepted' WHERE id_pengaduan = '$id_pengaduan'");
 }
-
-// Update status laporan (tolak)
 if (isset($_GET['tolak'])) {
     $id_pengaduan = $_GET['tolak'];
-    $query = "UPDATE pengaduan SET status = 'rejected' WHERE id_pengaduan = '$id_pengaduan'";
-    mysqli_query($conn, $query);
+    mysqli_query($conn, "UPDATE pengaduan SET status = 'rejected' WHERE id_pengaduan = '$id_pengaduan'");
 }
-
-// Hapus laporan
 if (isset($_GET['hapus'])) {
     $id_pengaduan = $_GET['hapus'];
-    $query = "DELETE FROM pengaduan WHERE id_pengaduan = '$id_pengaduan'";
-    mysqli_query($conn, $query);
+    mysqli_query($conn, "DELETE FROM pengaduan WHERE id_pengaduan = '$id_pengaduan'");
 }
 
-// Ambil data laporan
+// Data laporan
 $query = "SELECT p.*, m.nama FROM pengaduan p 
           JOIN masyarakat m ON p.nik = m.nik 
           ORDER BY p.status, p.tgl_pengaduan DESC";
 $result = mysqli_query($conn, $query);
+
+// Statistik
+$count_pending = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS total FROM pengaduan WHERE status = 'pending'"))['total'];
+$count_accepted = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS total FROM pengaduan WHERE status = 'accepted'"))['total'];
+$count_rejected = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS total FROM pengaduan WHERE status = 'rejected'"))['total'];
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Petugas</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <style>
     body {
-        background-color: #f2fff5;
-        font-family: 'Segoe UI', sans-serif;
+        font-family: 'Poppins', sans-serif;
+        background: #ffffff;
+        margin: 0;
+        padding: 0;
     }
 
-    .navbar {
-        background-color: #fff;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    .sidebar {
+        background: #fff;
+        width: 240px;
+        height: 100vh;
+        border-right: 1px solid #ddd;
+        position: fixed;
+        padding: 20px;
     }
 
-    .logo-ecoguard {
-        display: flex;
-        align-items: center;
-    }
-
-    .logo-ecoguard img {
-        width: 30px;
-        margin-right: 8px;
-    }
-
-    .logo-ecoguard span {
-        font-size: 20px;
-        font-weight: bold;
+    .sidebar h4 {
         color: #28a745;
+        margin-bottom: 30px;
     }
 
-    .container {
-        margin-top: 40px;
+    .sidebar a {
+        display: block;
+        color: #000;
+        font-weight: 500;
+        margin-bottom: 15px;
+        text-decoration: none;
     }
 
-    .card {
-        border: none;
-        border-radius: 20px;
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
+    .sidebar a.active,
+    .sidebar a:hover {
+        background-color: #28a745;
+        color: #fff;
+        padding: 8px;
+        border-radius: 8px;
     }
 
-    .table {
-        border-radius: 10px;
-        overflow: hidden;
+    .main {
+        margin-left: 260px;
+        padding: 30px;
     }
 
-    .table th {
-        background-color: #d1f5d3 !important;
-        color: #2c7a2c;
+    .table-responsive {
+        border-radius: 12px;
+        overflow-x: auto;
     }
 
-    .table td,
-    .table th {
-        vertical-align: middle;
+    .img-thumb {
+        width: 60px;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+
+    .badge {
+        font-size: 14px;
+        padding: 6px 10px;
     }
 
     .btn-sm {
-        border-radius: 10px;
-        padding: 6px 14px;
-        font-size: 14px;
+        font-size: 13px;
+        padding: 5px 10px;
+        border-radius: 8px;
     }
 
-    .table-striped>tbody>tr:nth-of-type(odd) {
-        background-color: #f7fdf8;
+    .stat-card {
+        border-radius: 12px;
+        padding: 15px;
+        color: white;
+        text-align: center;
+    }
+
+    .bg-pending {
+        background-color: #ffc107;
+        color: #000;
+    }
+
+    .bg-accepted {
+        background-color: #28a745;
+    }
+
+    .bg-rejected {
+        background-color: #dc3545;
     }
     </style>
 </head>
 
 <body>
 
-    <!-- Navbar -->
-    <nav class="navbar px-4 py-3 d-flex justify-content-between bg-white shadow-sm">
-        <div class="logo-ecoguard d-flex align-items-center">
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="d-flex align-items-center mb-4">
             <img src="logoeco.png" width="30" class="me-2">
-            <span class="fw-bold text-success">EcoGuard</span>
+            <h4 class="mb-0">EcoGuard</h4>
         </div>
-        <a href="login_petugas.php" class="btn btn-outline-danger btn-sm">Logout</a>
-    </nav>
+        <a href="#" class="active">📖 Data Laporan</a>
+        <a href="login_petugas.php" class="btn btn-outline-danger mt-5">Logout</a>
+    </div>
 
-    <div class="container">
-        <h3 class="text-success text-center mb-2">Dashboard Petugas</h3>
-        <p class="text-center mb-4">Selamat datang, <?= htmlspecialchars($nama_petugas) ?>!</p>
+    <!-- Main -->
+    <div class="main">
+        <h4 class="mb-4">Dashboard Petugas > <strong>Data Laporan</strong></h4>
+        <p>Selamat datang, <strong><?= htmlspecialchars($nama_petugas) ?></strong></p>
 
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title mb-4">Laporan Pengaduan</h5>
-                <div class="table-responsive">
-                    <table class="table table-bordered table-striped align-middle">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Tanggal</th>
-                                <th>Pelapor</th>
-                                <th>Laporan</th>
-                                <th>Status</th>
-                                <th>Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php $no = 1; while ($row = mysqli_fetch_assoc($result)): ?>
-                            <tr>
-                                <td><?= $no++ ?></td>
-                                <td><?= $row['tgl_pengaduan'] ?></td>
-                                <td><?= htmlspecialchars($row['nama']) ?></td>
-                                <td><?= htmlspecialchars($row['isi_laporan']) ?></td>
-                                <td>
-                                    <span class="badge bg-<?= 
-                                        $row['status'] == 'accepted' ? 'success' :
-                                        ($row['status'] == 'rejected' ? 'danger' : 'warning') ?>">
-                                        <?= ucfirst($row['status']) ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <?php if ($row['status'] == 'pending'): ?>
-                                    <a href="?terima=<?= $row['id_pengaduan'] ?>"
-                                        class="btn btn-success btn-sm">Terima</a>
-                                    <a href="?tolak=<?= $row['id_pengaduan'] ?>"
-                                        class="btn btn-warning btn-sm">Tolak</a>
-                                    <?php endif; ?>
-                                    <a href="?hapus=<?= $row['id_pengaduan'] ?>" class="btn btn-danger btn-sm"
-                                        onclick="return confirm('Yakin ingin menghapus laporan ini?')">Hapus</a>
-                                </td>
-                            </tr>
-                            <?php endwhile; ?>
-                        </tbody>
-                    </table>
+        <!-- Statistik -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="stat-card bg-pending">
+                    <h6>🕒 Pending</h6>
+                    <h4><?= $count_pending ?></h4>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card bg-accepted">
+                    <h6>✅ Accepted</h6>
+                    <h4><?= $count_accepted ?></h4>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card bg-rejected">
+                    <h6>❌ Rejected</h6>
+                    <h4><?= $count_rejected ?></h4>
                 </div>
             </div>
         </div>
+
+        <!-- Tabel Laporan -->
+        <div class="table-responsive mt-4">
+            <table class="table table-bordered align-middle">
+                <thead class="table-success">
+                    <tr>
+                        <th>#</th>
+                        <th>Tanggal</th>
+                        <th>Pelapor</th>
+                        <th>Laporan</th>
+                        <th>Foto</th>
+                        <th>Status</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php $no = 1; while ($row = mysqli_fetch_assoc($result)): ?>
+                    <tr>
+                        <td><?= $no++ ?></td>
+                        <td><?= $row['tgl_pengaduan'] ?></td>
+                        <td><?= htmlspecialchars($row['nama']) ?></td>
+                        <td><?= htmlspecialchars($row['isi_laporan']) ?></td>
+                        <td>
+                            <?php if ($row['foto']): ?>
+                            <a href="<?= $row['foto'] ?>" target="_blank">
+                                <img src="<?= $row['foto'] ?>" class="img-thumb mb-1">
+                            </a><br>
+                            <a href="<?= $row['foto'] ?>" download class="btn btn-outline-primary btn-sm">Download</a>
+                            <?php else: ?> -
+                            <?php endif; ?>
+                        </td>
+                        <td>
+                            <span class="badge bg-<?= 
+                            $row['status'] == 'accepted' ? 'success' :
+                            ($row['status'] == 'rejected' ? 'danger' : 'warning text-dark') ?>">
+                                <?= ucfirst($row['status']) ?>
+                            </span>
+                        </td>
+                        <td>
+                            <?php if ($row['status'] == 'pending'): ?>
+                            <a href="?terima=<?= $row['id_pengaduan'] ?>" class="btn btn-success btn-sm mb-1">Terima</a>
+                            <a href="?tolak=<?= $row['id_pengaduan'] ?>" class="btn btn-warning btn-sm mb-1">Tolak</a>
+                            <?php endif; ?>
+                            <a href="?hapus=<?= $row['id_pengaduan'] ?>" class="btn btn-danger btn-sm"
+                                onclick="return confirm('Yakin ingin menghapus laporan ini?')">Hapus</a>
+                        </td>
+                    </tr>
+                    <?php endwhile; ?>
+                </tbody>
+            </table>
+        </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>
